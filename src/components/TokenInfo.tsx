@@ -12,6 +12,9 @@ const miningContractAddress = import.meta.env.VITE_MINING_CONTRACT_ADDRESS as `0
 const key = import.meta.env.VITE_API_KEY;
 const decimals = 18;
 
+console.log('Mining Contract Address:', import.meta.env.VITE_MINING_CONTRACT_ADDRESS);
+
+
 const client = createPublicClient({
   chain: base,
   transport: http(`https://base-mainnet.g.alchemy.com/v2/${key}`),
@@ -41,8 +44,9 @@ const TokenInfo: React.FC = () => {
     tokenSymbol: string;
   } | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   //optional: print unique wallet addresses 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [uniqueAddresses, setUniqueAddresses] = useState<string[]>([]);
 
   useEffect(() => {
