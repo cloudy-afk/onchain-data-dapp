@@ -42,6 +42,7 @@ const TokenInfo: React.FC = () => {
   } | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //optional: print unique wallet addresses 
   const [uniqueAddresses, setUniqueAddresses] = useState<string[]>([]);
 
   useEffect(() => {
