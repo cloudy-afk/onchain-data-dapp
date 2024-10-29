@@ -32,6 +32,10 @@ if (!miningContractAddress || !miningContractAddress.startsWith("0x")) {
   throw new Error("Invalid or missing mining contract address in .env file");
 }
 
+const formatNumber = (num: number | string) => {
+  return parseFloat(num.toString()).toLocaleString();
+};
+
 const getMiningTerm = (date = new Date()) => {
   const startDate = parse(MINING_START_DATE, DATE_FORMAT, new Date());
   const daysSinceStart = differenceInDays(date, startDate);
@@ -190,7 +194,7 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Token Symbol: {data.tokenSymbol}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Max Supply: {data.maxSupply}</h2>
+              <h2 className="text-xl font-bold">Max Supply: {formatNumber(data.maxSupply)}</h2>
             </div>
           </div>
 
@@ -200,7 +204,7 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Total Processed Deposits: {data.lastDepositId}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Claimed Tokens: {data.claimedAmount}</h2>
+              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount)}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Total Wallets Mining: {data.totalUsers}</h2>
@@ -215,7 +219,7 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Allocation per Day: {currentAllocation} Tokens</h2>
+              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} Tokens</h2>
             </div>
           </div>
         </div>
