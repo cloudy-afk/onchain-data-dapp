@@ -6,14 +6,16 @@ import { abi as TokenAbi } from '../abi/itxToken';
 import { abi as MiningAbi } from '../abi/mining';
 import { depositedEventAbi } from '../abi/depositedEventAbi';
 import Navbar from './Navbar';
+import { differenceInDays, parse } from "date-fns";
 
 const tokenContractAddress = import.meta.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const miningContractAddress = import.meta.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const key = import.meta.env.VITE_API_KEY;
 const decimals = 18;
-
-console.log('Mining Contract Address:', import.meta.env.VITE_MINING_CONTRACT_ADDRESS);
-
+const DATE_FORMAT = "yyyy-MM-dd";
+const MINING_START_DATE = "2024-08-07";
+const MINING_FIRST_TERM_DURATION = 16;
+const TERM_TOKEN_ALLOCATION = 143_000_000;
 
 const client = createPublicClient({
   chain: base,
@@ -30,6 +32,34 @@ if (!miningContractAddress || !miningContractAddress.startsWith("0x")) {
   throw new Error("Invalid or missing mining contract address in .env file");
 }
 
+const getMiningTerm = (date = new Date()) => {
+  const startDate = parse(MINING_START_DATE, DATE_FORMAT, new Date());
+  const daysSinceStart = differenceInDays(date, startDate);
+
+  if (daysSinceStart < 0) return 0;
+
+  let termNumber = 1;
+  let daysAccumulated = 0;
+  let currentTermDuration = MINING_FIRST_TERM_DURATION;
+
+  while (daysAccumulated <= daysSinceStart) {
+    daysAccumulated += currentTermDuration;
+    if (daysAccumulated > daysSinceStart) {
+      return termNumber;
+    }
+    termNumber++;
+    currentTermDuration *= 2;
+  }
+
+  return termNumber;
+};
+
+const getAllocation = (term: number) => {
+  const currentTermDuration = MINING_FIRST_TERM_DURATION * term;
+  const dailyAllocation = TERM_TOKEN_ALLOCATION / currentTermDuration;
+  return Math.floor(dailyAllocation * 1000) / 1000;
+};
+
 const TokenInfo: React.FC = () => {
   const [data, setData] = useState<{
     tokenName: string;
@@ -38,11 +68,12 @@ const TokenInfo: React.FC = () => {
     lastDepositId: number;
     totalUsers: number;
     totalETH: string;
-    currentPhase: number;
-    phaseRewardPerDay: string;
     noOfPhases: number;
     tokenSymbol: string;
   } | null>(null);
+
+  const [currentMiningTerm, setCurrentMiningTerm] = useState<number>(0);
+  const [currentAllocation, setCurrentAllocation] = useState<number>(0);
 
 
   //optional: print unique wallet addresses 
@@ -78,18 +109,6 @@ const TokenInfo: React.FC = () => {
 
         const balance = await provider.getBalance(miningContractAddress);
 
-        const currentPhase = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'PHASE0_PERIOD',
-        }) as bigint;
-
-        const phaseRewardPerDay = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'PHASE0_REWARD_PER_DAY',
-        }) as bigint;
-
         const noOfPhases = await client.readContract({
           address: tokenContractAddress,
           abi: TokenAbi,
@@ -111,13 +130,16 @@ const TokenInfo: React.FC = () => {
           lastDepositId: Number(lastDepositId.toString()),
           totalUsers: uniqueAddressesFetched.length,
           totalETH: formatEther(balance),
-          currentPhase: Number(currentPhase.toString()),
-          phaseRewardPerDay: formatUnits(phaseRewardPerDay, decimals),
           noOfPhases: Number(noOfPhases),
           tokenSymbol,
         });
 
         setUniqueAddresses(uniqueAddressesFetched);
+
+        const term = getMiningTerm();
+        setCurrentMiningTerm(term);
+        setCurrentAllocation(getAllocation(term));
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -161,39 +183,39 @@ const TokenInfo: React.FC = () => {
         <div className='my-[20px] md:my-[30px] p-10 mx-auto'>
           <h1 className="text-3xl font-bold mb-2">Token Details</h1>
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Token Name: {data.tokenName}</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Token Symbol: {data.tokenSymbol}</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Max Supply: {data.maxSupply}</h2>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats</h1>
+          <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats - Base Network</h1>
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Total Processed Deposits: {data.lastDepositId}</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Total Claimed Tokens: {data.claimedAmount}</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Total Wallets Mining: {data.totalUsers}</h2>
             </div>
           </div>
 
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Amount Of ETH Currently Mined: {data.totalETH} ETH</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Token Reward Per Day (Phase 0): {data.phaseRewardPerDay} Tokens</h2>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm}</h2>
             </div>
-            <div className="bg-[#f9f9f9] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Phase 0 Duration In Days: {data.currentPhase} Days</h2>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Allocation per Day: {currentAllocation} Tokens</h2>
             </div>
           </div>
         </div>
