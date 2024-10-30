@@ -245,19 +245,19 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} Tokens</h2>
+              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} ITX</h2>
             </div>
           </div>
 
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-            <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {rewards.rewardPerEthShortTerm} Tokens</h2>
+              <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {formatNumber(rewards.rewardPerEthShortTerm)} ITX</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {rewards.rewardPerEthLongTerm} Tokens</h2>
+              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {formatNumber(rewards.rewardPerEthLongTerm)} ITX</h2>
             </div>
           </div>
-          <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depends on miners activity.*</p>
+          <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
         </div>
       ) : (
         <div className='text-center font-bold text-xl mt-80'>
