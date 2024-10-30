@@ -16,6 +16,8 @@ const DATE_FORMAT = "yyyy-MM-dd";
 const MINING_START_DATE = "2024-08-07";
 const MINING_FIRST_TERM_DURATION = 16;
 const TERM_TOKEN_ALLOCATION = 143_000_000;
+const SHORT_TERM_RATIO = 1;
+const LONG_TERM_RATIO = 2;
 
 const client = createPublicClient({
   chain: base,
@@ -64,6 +66,25 @@ const getAllocation = (term: number) => {
   return Math.floor(dailyAllocation * 1000) / 1000;
 };
 
+const getRewardPerEth = (totalEthDeposited: number) => {
+  const currentTerm = getMiningTerm(new Date());
+  const dailyAllocation = getAllocation(currentTerm);
+
+  // Short-term and long-term rewards split based on the 1:2 ratio
+  const totalRatio = SHORT_TERM_RATIO + LONG_TERM_RATIO;
+  const shortTermAllocation = (dailyAllocation * SHORT_TERM_RATIO) / totalRatio;
+  const longTermAllocation = (dailyAllocation * LONG_TERM_RATIO) / totalRatio;
+
+  // Rewards per 1 ETH for short-term and long-term
+  const rewardPerEthShortTerm = totalEthDeposited > 0 ? shortTermAllocation / totalEthDeposited : 0;
+  const rewardPerEthLongTerm = totalEthDeposited > 0 ? longTermAllocation / totalEthDeposited : 0;
+
+  return {
+    rewardPerEthShortTerm: Math.floor(rewardPerEthShortTerm * 1000) / 1000,
+    rewardPerEthLongTerm: Math.floor(rewardPerEthLongTerm * 1000) / 1000
+  };
+};
+
 const TokenInfo: React.FC = () => {
   const [data, setData] = useState<{
     tokenName: string;
@@ -78,6 +99,8 @@ const TokenInfo: React.FC = () => {
 
   const [currentMiningTerm, setCurrentMiningTerm] = useState<number>(0);
   const [currentAllocation, setCurrentAllocation] = useState<number>(0);
+  const [rewards, setRewards] = useState<{ rewardPerEthShortTerm: number, rewardPerEthLongTerm: number }>({ rewardPerEthShortTerm: 0, rewardPerEthLongTerm: 0 });
+
 
 
   //optional: print unique wallet addresses 
@@ -143,6 +166,9 @@ const TokenInfo: React.FC = () => {
         const term = getMiningTerm();
         setCurrentMiningTerm(term);
         setCurrentAllocation(getAllocation(term));
+
+        const totalEthDeposited = parseFloat(formatEther(balance));
+        setRewards(getRewardPerEth(totalEthDeposited));
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -222,6 +248,16 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} Tokens</h2>
             </div>
           </div>
+
+          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {rewards.rewardPerEthShortTerm} Tokens</h2>
+            </div>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {rewards.rewardPerEthLongTerm} Tokens</h2>
+            </div>
+          </div>
+          <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depends on miners activity.*</p>
         </div>
       ) : (
         <div className='text-center font-bold text-xl mt-80'>
