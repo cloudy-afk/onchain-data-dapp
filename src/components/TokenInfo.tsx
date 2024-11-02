@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createPublicClient, http, formatUnits, formatEther } from 'viem';
+import { createPublicClient, http, formatUnits, formatEther, decodeEventLog } from 'viem';
 import { ethers } from "ethers";
 import { base } from 'viem/chains';
 import { abi as TokenAbi } from '../abi/itxToken';
@@ -18,6 +18,8 @@ const MINING_FIRST_TERM_DURATION = 16;
 const TERM_TOKEN_ALLOCATION = 143_000_000;
 const SHORT_TERM_RATIO = 1;
 const LONG_TERM_RATIO = 2;
+// const getTodayStart = () => startOfDay(new Date()).getTime() / 1000;
+
 
 const client = createPublicClient({
   chain: base,
@@ -100,82 +102,91 @@ const TokenInfo: React.FC = () => {
   const [currentMiningTerm, setCurrentMiningTerm] = useState<number>(0);
   const [currentAllocation, setCurrentAllocation] = useState<number>(0);
   const [rewards, setRewards] = useState<{ rewardPerEthShortTerm: number, rewardPerEthLongTerm: number }>({ rewardPerEthShortTerm: 0, rewardPerEthLongTerm: 0 });
+  const [totalDepositsFormatted, setTotalDepositsFormatted] = useState<string>("");
+  const [totalDailyVolume, setTotalDailyVolume] = useState<string>("");
 
 
+  const fetchTokenData = async () => {
+    try {
+      const tokenName = await client.readContract({
+        address: tokenContractAddress,
+        abi: TokenAbi,
+        functionName: 'name',
+      }) as string;
 
-  //optional: print unique wallet addresses 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [uniqueAddresses, setUniqueAddresses] = useState<string[]>([]);
+      const totalClaimedAmount = await client.readContract({
+        address: tokenContractAddress,
+        abi: TokenAbi,
+        functionName: 'totalClaimedAmount',
+      }) as bigint;
+
+      const maxSupply = await client.readContract({
+        address: tokenContractAddress,
+        abi: TokenAbi,
+        functionName: 'MAX_SUPPLY',
+      }) as bigint;
+
+      const lastDepositId = await client.readContract({
+        address: miningContractAddress,
+        abi: MiningAbi,
+        functionName: 'getLastProcessedDepositId',
+      }) as bigint;
+
+      const balance = await provider.getBalance(miningContractAddress);
+
+      const noOfPhases = await client.readContract({
+        address: tokenContractAddress,
+        abi: TokenAbi,
+        functionName: 'NUM_PHASES',
+      }) as bigint;
+
+      const tokenSymbol = await client.readContract({
+        address: tokenContractAddress,
+        abi: TokenAbi,
+        functionName: 'symbol',
+      }) as string;
+
+      const uniqueAddressesFetched = await getUniqueAddresses() as string[];
+
+      setData({
+        tokenName,
+        claimedAmount: formatUnits(totalClaimedAmount, decimals),
+        maxSupply: formatUnits(maxSupply, decimals),
+        lastDepositId: Number(lastDepositId.toString()),
+        totalUsers: uniqueAddressesFetched.length,
+        totalETH: formatEther(balance),
+        noOfPhases: Number(noOfPhases),
+        tokenSymbol,
+      });
+
+      const term = getMiningTerm();
+      setCurrentMiningTerm(term);
+      setCurrentAllocation(getAllocation(term));
+
+      const totalEthDeposited = parseFloat(formatEther(balance));
+      setRewards(getRewardPerEth(totalEthDeposited));
+
+      const totalEthDeposit = await getTotalDeposits();
+      setTotalDepositsFormatted(formatNumber(formatEther(totalEthDeposit)));
+
+
+      const dailyVolume = await getDailyVolume();
+      setTotalDailyVolume(formatNumber(formatEther(dailyVolume)));
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const tokenName = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'name',
-        }) as string;
+    fetchTokenData();
 
-        const totalClaimedAmount = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'totalClaimedAmount',
-        }) as bigint;
+    const interval = setInterval(() => {
+      fetchTokenData();
+    }, 3600000); // Update every 1 hour or 21600000 in millseconds
 
-        const maxSupply = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'MAX_SUPPLY',
-        }) as bigint;
-
-        const lastDepositId = await client.readContract({
-          address: miningContractAddress,
-          abi: MiningAbi,
-          functionName: 'getLastProcessedDepositId',
-        }) as bigint;
-
-        const balance = await provider.getBalance(miningContractAddress);
-
-        const noOfPhases = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'NUM_PHASES',
-        }) as bigint;
-
-        const tokenSymbol = await client.readContract({
-          address: tokenContractAddress,
-          abi: TokenAbi,
-          functionName: 'symbol',
-        }) as string;
-
-        const uniqueAddressesFetched = await getUniqueAddresses() as string[];
-
-        setData({
-          tokenName,
-          claimedAmount: formatUnits(totalClaimedAmount, decimals),
-          maxSupply: formatUnits(maxSupply, decimals),
-          lastDepositId: Number(lastDepositId.toString()),
-          totalUsers: uniqueAddressesFetched.length,
-          totalETH: formatEther(balance),
-          noOfPhases: Number(noOfPhases),
-          tokenSymbol,
-        });
-
-        setUniqueAddresses(uniqueAddressesFetched);
-
-        const term = getMiningTerm();
-        setCurrentMiningTerm(term);
-        setCurrentAllocation(getAllocation(term));
-
-        const totalEthDeposited = parseFloat(formatEther(balance));
-        setRewards(getRewardPerEth(totalEthDeposited));
-
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
-  }, []);
+    return () => clearInterval(interval);
+  }, [fetchTokenData]);
 
   const getUniqueAddresses = async () => {
     try {
@@ -206,6 +217,71 @@ const TokenInfo: React.FC = () => {
     }
   };
 
+  const getTotalDeposits = async () => {
+    try {
+      const logs = await client.getLogs({
+        address: miningContractAddress,
+        event: depositedEventAbi,
+        fromBlock: 'earliest',
+        toBlock: 'latest',
+      });
+
+      let totalDeposits = 0n;
+
+      for (const log of logs) {
+        const { args } = decodeEventLog({
+          abi: [depositedEventAbi],
+          data: log.data,
+          topics: log.topics,
+        }) as unknown as { args: { amount: bigint } };
+
+        totalDeposits += args.amount;
+      }
+
+      return totalDeposits;
+    } catch (error) {
+      console.error('Error fetching total deposits:', error);
+      return BigInt(0);
+    }
+  };
+
+  const getDailyVolume = async () => {
+    try {
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0); // Set to 00:00:00.000 UTC
+      const todayStartTimestamp = Math.floor(todayStart.getTime() / 1000);
+
+      const logs = await client.getLogs({
+        address: miningContractAddress,
+        event: depositedEventAbi,
+        fromBlock: 'earliest',
+        toBlock: 'latest',
+      });
+
+      let totalDeposits = 0n;
+
+      for (const log of logs) {
+        const { args } = decodeEventLog({
+          abi: [depositedEventAbi],
+          data: log.data,
+          topics: log.topics,
+        }) as unknown as { args: { amount: bigint, depositedAt: number } };
+
+        // Check if the depositedAt timestamp is from today
+        if (args.depositedAt >= todayStartTimestamp) {
+          totalDeposits += args.amount;
+        }
+      }
+
+      return totalDeposits;
+    } catch (error) {
+      console.error('Error fetching total deposits:', error);
+      return BigInt(0);
+    }
+  };
+
+
+
   return (
     <div>
       <Navbar />
@@ -227,34 +303,37 @@ const TokenInfo: React.FC = () => {
           <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats - Base Network</h1>
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Processed Deposits: {data.lastDepositId}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount)}</h2>
+              <h2 className="text-xl font-bold">Total No of Deposits: {data.lastDepositId}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Total Wallets Mining: {data.totalUsers}</h2>
             </div>
-          </div>
-
-          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Amount Of ETH Currently Mined: {data.totalETH} ETH</h2>
-            </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm}</h2>
             </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} ITX</h2>
-            </div>
           </div>
 
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} ITX</h2>
+            </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {formatNumber(rewards.rewardPerEthShortTerm)} ITX</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
               <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {formatNumber(rewards.rewardPerEthLongTerm)} ITX</h2>
+            </div>
+          </div>
+
+          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount)} ITX</h2>
+            </div>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Amount Of ETH Mined Today: {totalDailyVolume} ETH</h2>
+            </div>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted} ETH</h2>
             </div>
           </div>
           <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
