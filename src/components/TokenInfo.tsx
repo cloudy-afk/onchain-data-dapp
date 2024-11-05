@@ -8,18 +8,18 @@ import { depositedEventAbi } from '../abi/depositedEventAbi';
 import Navbar from './Navbar';
 import { differenceInDays, parse } from "date-fns";
 
+
 const tokenContractAddress = import.meta.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const miningContractAddress = import.meta.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const key = import.meta.env.VITE_API_KEY;
 const decimals = 18;
-const DATE_FORMAT = "yyyy-MM-dd";
 const MINING_START_DATE = "2024-08-07";
 const MINING_FIRST_TERM_DURATION = 16;
 const TERM_TOKEN_ALLOCATION = 143_000_000;
 const SHORT_TERM_RATIO = 1;
 const LONG_TERM_RATIO = 2;
-// const getTodayStart = () => startOfDay(new Date()).getTime() / 1000;
 
+type MiningData = Record<string, { term: number; allocation: number }>;
 
 const client = createPublicClient({
   chain: base,
@@ -40,11 +40,13 @@ const formatNumber = (num: number | string) => {
   return parseFloat(num.toString()).toLocaleString();
 };
 
-const getMiningTerm = (date = new Date()) => {
-  const startDate = parse(MINING_START_DATE, DATE_FORMAT, new Date());
+const getMiningTerm = (date: Date = new Date()) => {
+  const startDate = parse(MINING_START_DATE, "yyyy-MM-dd", new Date());
   const daysSinceStart = differenceInDays(date, startDate);
 
-  if (daysSinceStart < 0) return 0;
+  if (daysSinceStart < 0) {
+    return 0;
+  }
 
   let termNumber = 1;
   let daysAccumulated = 0;
@@ -62,11 +64,44 @@ const getMiningTerm = (date = new Date()) => {
   return termNumber;
 };
 
+const groupAllocations = (dates: string[]) => {
+  const result: MiningData = {};
+
+  dates.forEach((date) => {
+    const term = getMiningTerm(new Date(date));
+    const allocation = getAllocation(term);
+    result[date] = { term, allocation };
+  });
+
+  return result;
+};
+
+const calculateTermDates = (startDateStr: string) => {
+  const startDate = new Date(startDateStr);
+  const termLengths = [16, 32, 64, 128, 256, 512, 1024];
+  const currentDate = new Date(startDate);
+  const allDates: string[] = [];
+
+  for (const termLength of termLengths) {
+    for (let i = 0; i < termLength; i++) {
+      allDates.push(currentDate.toISOString().split("T")[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }
+
+  return allDates;
+};
+
 const getAllocation = (term: number) => {
-  const currentTermDuration = MINING_FIRST_TERM_DURATION * term;
+  const currentTermDuration = MINING_FIRST_TERM_DURATION * 2 ** (term - 1);
   const dailyAllocation = TERM_TOKEN_ALLOCATION / currentTermDuration;
   return Math.floor(dailyAllocation * 1000) / 1000;
 };
+
+(() => {
+  const groupDate = calculateTermDates(MINING_START_DATE);
+  const allocations = groupAllocations(groupDate);
+})();
 
 const getRewardPerEth = (totalEthDeposited: number) => {
   const currentTerm = getMiningTerm(new Date());
