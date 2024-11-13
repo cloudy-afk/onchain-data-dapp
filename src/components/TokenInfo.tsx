@@ -221,18 +221,18 @@ const TokenInfo: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-  
+
     const fetchData = async () => {
       if (isMounted) {
         await fetchTokenData();
       }
     };
-  
+
     fetchData();
     const interval = setInterval(fetchData, 3600000);
-  
+
     return () => {
-      isMounted = false; 
+      isMounted = false;
       clearInterval(interval);
     };
   }, []);
@@ -345,71 +345,65 @@ const TokenInfo: React.FC = () => {
   return (
     <div>
       <Navbar />
-      {data ? (
+      {/* {data ? ( */}
         <div className='my-[20px] md:my-[30px] p-10 mx-auto'>
           <h1 className="text-3xl font-bold mb-2">Token Details</h1>
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Token Name: {data.tokenName}</h2>
+              <h2 className="text-xl font-bold">Token Name: {data ? data.tokenName : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Token Symbol: {data.tokenSymbol}</h2>
+              <h2 className="text-xl font-bold">Token Symbol: {data ? data.tokenSymbol : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Max Supply: {formatNumber(data.maxSupply)}</h2>
+              <h2 className="text-xl font-bold">Max Supply: {data ? formatNumber(data.maxSupply) : "Loading..."}</h2>
             </div>
           </div>
 
           <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats - Base Network</h1>
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total No of Deposits: {data.lastDepositId}</h2>
+              <h2 className="text-xl font-bold">Total No of Deposits: {data ? data.lastDepositId : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Wallets Mining: {data.totalUsers}</h2>
+              <h2 className="text-xl font-bold">Total Wallets Mining: {data ? data.totalUsers : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm}</h2>
+              <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm ? currentMiningTerm : "Loading..."}</h2>
             </div>
           </div>
 
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Allocation per Day: {formatNumber(currentAllocation)} ITX</h2>
+              <h2 className="text-xl font-bold">Allocation per Day: {currentAllocation ? formatNumber(currentAllocation) + " " + "ITX" : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {formatNumber(rewards.rewardPerEthShortTerm)} ITX</h2>
+              <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {rewards.rewardPerEthShortTerm ? formatNumber(rewards.rewardPerEthShortTerm) + " " + "ITX" : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {formatNumber(rewards.rewardPerEthLongTerm)} ITX</h2>
+              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {rewards.rewardPerEthLongTerm ? formatNumber(rewards.rewardPerEthLongTerm) + " " + "ITX" : "Loading..."}</h2>
             </div>
           </div>
 
           <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount)} ITX</h2>
+              <h2 className="text-xl font-bold">Total Claimed Tokens: {data ? formatNumber(data.claimedAmount) + " " + "ITX" : "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Amount Of ETH Mined Today: {totalDailyVolume} ETH</h2>
+              <h2 className="text-xl font-bold">Amount Of ETH Mined Today: {totalDailyVolume ? totalDailyVolume + " " + "ETH" :  "Loading..."}</h2>
             </div>
             <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted} ETH</h2>
+              <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted ? totalDepositsFormatted + " " + "ETH" : "Loading..."}</h2>
             </div>
           </div>
-
-          {/* <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount2)} ITX</h2>
-            </div>
-          </div> */}
 
           <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
         </div>
-      ) : (
+      {/* ) : (
         <div className='text-center font-bold text-xl mt-80'>
           <p>Loading data...</p>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
