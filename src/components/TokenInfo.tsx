@@ -30,15 +30,15 @@ const client = createPublicClient({
 const provider = new ethers.JsonRpcProvider(`https://base-mainnet.g.alchemy.com/v2/${key}`);
 
 if (!tokenContractAddress || !tokenContractAddress.startsWith("0x")) {
-  throw new Error("Invalid or missing token contract address in .env file");
+  throw new Error("Invalid or missing token contract address in .env file - tokenContractAddress");
 }
 
 if (!ethtokenContractAddress || !ethtokenContractAddress.startsWith("0x")) {
-  throw new Error("Invalid or missing token contract address in .env file");
+  throw new Error("Invalid or missing token contract address in .env file - ethtokenContractAddress");
 }
 
 if (!miningContractAddress || !miningContractAddress.startsWith("0x")) {
-  throw new Error("Invalid or missing mining contract address in .env file");
+  throw new Error("Invalid or missing mining contract address in .env file - miningContractAddress");
 }
 
 const formatNumber = (num: number | string) => {
