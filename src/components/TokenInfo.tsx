@@ -10,6 +10,7 @@ import { differenceInDays, parse } from "date-fns";
 
 
 const tokenContractAddress = import.meta.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
+const ethtokenContractAddress = import.meta.env.VITE_ETH_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const miningContractAddress = import.meta.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const key = import.meta.env.VITE_API_KEY;
 const decimals = 18;
@@ -29,6 +30,10 @@ const client = createPublicClient({
 const provider = new ethers.JsonRpcProvider(`https://base-mainnet.g.alchemy.com/v2/${key}`);
 
 if (!tokenContractAddress || !tokenContractAddress.startsWith("0x")) {
+  throw new Error("Invalid or missing token contract address in .env file");
+}
+
+if (!ethtokenContractAddress || !ethtokenContractAddress.startsWith("0x")) {
   throw new Error("Invalid or missing token contract address in .env file");
 }
 
@@ -101,6 +106,7 @@ const getAllocation = (term: number) => {
 (() => {
   const groupDate = calculateTermDates(MINING_START_DATE);
   const allocations = groupAllocations(groupDate);
+  console.log("allocation", allocations)
 })();
 
 const getRewardPerEth = (totalEthDeposited: number) => {
@@ -214,23 +220,55 @@ const TokenInfo: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTokenData();
+    let isMounted = true;
+  
+    const fetchData = async () => {
+      if (isMounted) {
+        await fetchTokenData();
+      }
+    };
+  
+    fetchData();
+    const interval = setInterval(fetchData, 3600000);
+  
+    return () => {
+      isMounted = false; 
+      clearInterval(interval);
+    };
+  }, []);
 
-    const interval = setInterval(() => {
-      fetchTokenData();
-    }, 3600000); // Update every 1 hour or 21600000 in millseconds
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    return () => clearInterval(interval);
-  }, [fetchTokenData]);
+  const getLogsPaginated = async (fromBlock: bigint, toBlock: bigint, step = 500000n) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let logs: any[] = [];
+    let currentBlock = fromBlock;
+
+    while (currentBlock <= toBlock) {
+      const endBlock = currentBlock + step - 1n > toBlock ? toBlock : currentBlock + step - 1n;
+      try {
+        const blockLogs = await client.getLogs({
+          address: miningContractAddress,
+          event: depositedEventAbi,
+          fromBlock: currentBlock,
+          toBlock: endBlock,
+        });
+        logs = logs.concat(blockLogs);
+      } catch (error) {
+        console.error(`Error fetching logs from ${currentBlock} to ${endBlock}:`, error);
+      }
+      currentBlock = endBlock + 1n;
+      await delay(200);
+    }
+
+    return logs;
+  };
 
   const getUniqueAddresses = async () => {
     try {
-      const logs = await client.getLogs({
-        address: miningContractAddress,
-        event: depositedEventAbi,
-        fromBlock: 'earliest',
-        toBlock: 'latest',
-      });
+      const fromBlock = BigInt(21218165);
+      const toBlock = BigInt(await provider.getBlockNumber());
+      const logs = await getLogsPaginated(fromBlock, toBlock);
 
       const uniqueAddresses = new Set(
         logs
@@ -243,26 +281,20 @@ const TokenInfo: React.FC = () => {
           .filter((address: string | null): address is string => address !== null)
       );
 
-      const uniqueAddressArray = Array.from(uniqueAddresses);
-      return uniqueAddressArray;
-
+      return Array.from(uniqueAddresses);
     } catch (error) {
-      console.error("Error fetching logs or processing:", error);
+      console.error("Error fetching unique addresses:", error);
       return [];
     }
   };
 
   const getTotalDeposits = async () => {
     try {
-      const logs = await client.getLogs({
-        address: miningContractAddress,
-        event: depositedEventAbi,
-        fromBlock: 'earliest',
-        toBlock: 'latest',
-      });
+      const fromBlock = BigInt(21218165);
+      const toBlock = BigInt(await provider.getBlockNumber());
+      const logs = await getLogsPaginated(fromBlock, toBlock);
 
       let totalDeposits = 0n;
-
       for (const log of logs) {
         const { args } = decodeEventLog({
           abi: [depositedEventAbi],
@@ -275,26 +307,22 @@ const TokenInfo: React.FC = () => {
 
       return totalDeposits;
     } catch (error) {
-      console.error('Error fetching total deposits:', error);
-      return BigInt(0);
+      console.error("Error fetching total deposits:", error);
+      return 0n;
     }
   };
 
   const getDailyVolume = async () => {
     try {
       const todayStart = new Date();
-      todayStart.setUTCHours(0, 0, 0, 0); // Set to 00:00:00.000 UTC
+      todayStart.setUTCHours(0, 0, 0, 0);
       const todayStartTimestamp = Math.floor(todayStart.getTime() / 1000);
 
-      const logs = await client.getLogs({
-        address: miningContractAddress,
-        event: depositedEventAbi,
-        fromBlock: 'earliest',
-        toBlock: 'latest',
-      });
+      const fromBlock = BigInt(21218165); // Replace with actual start block if needed
+      const toBlock = BigInt(await provider.getBlockNumber()); // Current block number
+      const logs = await getLogsPaginated(fromBlock, toBlock);
 
-      let totalDeposits = 0n;
-
+      let dailyVolume = 0n;
       for (const log of logs) {
         const { args } = decodeEventLog({
           abi: [depositedEventAbi],
@@ -302,20 +330,17 @@ const TokenInfo: React.FC = () => {
           topics: log.topics,
         }) as unknown as { args: { amount: bigint, depositedAt: number } };
 
-        // Check if the depositedAt timestamp is from today
         if (args.depositedAt >= todayStartTimestamp) {
-          totalDeposits += args.amount;
+          dailyVolume += args.amount;
         }
       }
 
-      return totalDeposits;
+      return dailyVolume;
     } catch (error) {
-      console.error('Error fetching total deposits:', error);
-      return BigInt(0);
+      console.error("Error fetching daily volume:", error);
+      return 0n;
     }
   };
-
-
 
   return (
     <div>
@@ -371,6 +396,13 @@ const TokenInfo: React.FC = () => {
               <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted} ETH</h2>
             </div>
           </div>
+
+          {/* <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+              <h2 className="text-xl font-bold">Total Claimed Tokens: {formatNumber(data.claimedAmount2)} ITX</h2>
+            </div>
+          </div> */}
+
           <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
         </div>
       ) : (
