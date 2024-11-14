@@ -3,6 +3,7 @@ import { createPublicClient, http, formatUnits, formatEther, decodeEventLog } fr
 import { ethers } from "ethers";
 import { base } from 'viem/chains';
 import { abi as TokenAbi } from '../abi/itxToken';
+// import { abi as TokenAbiEth } from '../abi/itxTokenEth'
 import { abi as MiningAbi } from '../abi/mining';
 import { depositedEventAbi } from '../abi/depositedEventAbi';
 import Navbar from './Navbar';
@@ -12,6 +13,7 @@ import { differenceInDays, parse } from "date-fns";
 const tokenContractAddress = import.meta.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const ethtokenContractAddress = import.meta.env.VITE_ETH_TOKEN_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const miningContractAddress = import.meta.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}` | undefined;
+const ethMiningContractAddress = import.meta.env.VITE_ETH_MINING_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const key = import.meta.env.VITE_API_KEY;
 const decimals = 18;
 const MINING_START_DATE = "2024-08-07";
@@ -39,6 +41,10 @@ if (!ethtokenContractAddress || !ethtokenContractAddress.startsWith("0x")) {
 
 if (!miningContractAddress || !miningContractAddress.startsWith("0x")) {
   throw new Error("Invalid or missing mining contract address in .env file - miningContractAddress");
+}
+
+if (!ethMiningContractAddress || !ethMiningContractAddress.startsWith("0x")) {
+  throw new Error("Invalid or missing mining contract address in .env file - ethMiningContractAddress");
 }
 
 const formatNumber = (num: number | string) => {
@@ -132,6 +138,7 @@ const TokenInfo: React.FC = () => {
   const [data, setData] = useState<{
     tokenName: string;
     claimedAmount: string;
+    // claimedAmount2: string;
     maxSupply: string;
     lastDepositId: number;
     totalUsers: number;
@@ -155,6 +162,12 @@ const TokenInfo: React.FC = () => {
         functionName: 'name',
       }) as string;
 
+      // const totalClaimedAmount2 = await client.readContract({
+      //   address: ethtokenContractAddress,
+      //   abi: TokenAbiEth,
+      //   functionName: 'totalClaimedAmount',
+      // }) as string;
+
       const totalClaimedAmount = await client.readContract({
         address: tokenContractAddress,
         abi: TokenAbi,
@@ -175,6 +188,10 @@ const TokenInfo: React.FC = () => {
 
       const balance = await provider.getBalance(miningContractAddress);
 
+      const balance2 = await provider.getBalance(ethMiningContractAddress);
+
+      console.log("balance of mining2", balance2)
+
       const noOfPhases = await client.readContract({
         address: tokenContractAddress,
         abi: TokenAbi,
@@ -192,6 +209,7 @@ const TokenInfo: React.FC = () => {
       setData({
         tokenName,
         claimedAmount: formatUnits(totalClaimedAmount, decimals),
+        // claimedAmount2: formatUnits(totalClaimedAmount, decimals),
         maxSupply: formatUnits(maxSupply, decimals),
         lastDepositId: Number(lastDepositId.toString()),
         totalUsers: uniqueAddressesFetched.length,
@@ -199,6 +217,8 @@ const TokenInfo: React.FC = () => {
         noOfPhases: Number(noOfPhases),
         tokenSymbol,
       });
+
+      // console.log("claim2:", totalClaimedAmount2);
 
       const term = getMiningTerm();
       setCurrentMiningTerm(term);
@@ -239,7 +259,7 @@ const TokenInfo: React.FC = () => {
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const getLogsPaginated = async (fromBlock: bigint, toBlock: bigint, step = 500000n) => {
+  const getLogsPaginated = async (fromBlock: bigint, toBlock: bigint, step = 10000n) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let logs: any[] = [];
     let currentBlock = fromBlock;
@@ -346,59 +366,59 @@ const TokenInfo: React.FC = () => {
     <div>
       <Navbar />
       {/* {data ? ( */}
-        <div className='my-[20px] md:my-[30px] p-10 mx-auto'>
-          <h1 className="text-3xl font-bold mb-2">Token Details</h1>
-          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Token Name: {data ? data.tokenName : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Token Symbol: {data ? data.tokenSymbol : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Max Supply: {data ? formatNumber(data.maxSupply) : "Loading..."}</h2>
-            </div>
+      <div className='my-[20px] md:my-[30px] p-10 mx-auto'>
+        <h1 className="text-3xl font-bold mb-2">Token Details</h1>
+        <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Token Name: {data ? data.tokenName : "Loading..."}</h2>
           </div>
-
-          <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats - Base Network</h1>
-          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total No of Deposits: {data ? data.lastDepositId : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Wallets Mining: {data ? data.totalUsers : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm ? currentMiningTerm : "Loading..."}</h2>
-            </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Token Symbol: {data ? data.tokenSymbol : "Loading..."}</h2>
           </div>
-
-          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Allocation per Day: {currentAllocation ? formatNumber(currentAllocation) + " " + "ITX" : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {rewards.rewardPerEthShortTerm ? formatNumber(rewards.rewardPerEthShortTerm) + " " + "ITX" : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {rewards.rewardPerEthLongTerm ? formatNumber(rewards.rewardPerEthLongTerm) + " " + "ITX" : "Loading..."}</h2>
-            </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Max Supply: {data ? formatNumber(data.maxSupply) : "Loading..."}</h2>
           </div>
-
-          <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Claimed Tokens: {data ? formatNumber(data.claimedAmount) + " " + "ITX" : "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Amount Of ETH Mined Today: {totalDailyVolume ? totalDailyVolume + " " + "ETH" :  "Loading..."}</h2>
-            </div>
-            <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
-              <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted ? totalDepositsFormatted + " " + "ETH" : "Loading..."}</h2>
-            </div>
-          </div>
-
-          <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
         </div>
+
+        <h1 className="text-3xl font-bold mt-10 mb-2">Mining Stats - Base Network</h1>
+        <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-2'>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Total No of Deposits: {data ? data.lastDepositId : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Total Wallets Mining: {data ? data.totalUsers : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Current Mining Phase: {currentMiningTerm ? currentMiningTerm : "Loading..."}</h2>
+          </div>
+        </div>
+
+        <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Allocation per Day: {currentAllocation ? formatNumber(currentAllocation) + " " + "ITX" : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Reward per 1 ETH (Short Term): {rewards.rewardPerEthShortTerm ? formatNumber(rewards.rewardPerEthShortTerm) + " " + "ITX" : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Reward per 1 ETH (Long Term): {rewards.rewardPerEthLongTerm ? formatNumber(rewards.rewardPerEthLongTerm) + " " + "ITX" : "Loading..."}</h2>
+          </div>
+        </div>
+
+        <div className='flex flex-col md:flex-row justify-between space-x-0 md:space-x-4'>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Total Claimed Tokens: {data ? formatNumber(data.claimedAmount) + " " + "ITX" : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Amount Of ETH Mined Today: {totalDailyVolume ? totalDailyVolume + " " + "ETH" : "Loading..."}</h2>
+          </div>
+          <div className="bg-[#ffffff] p-8 md:p-10 lg:p-[70px] my-2 md:my-5 border border-[#ccc] rounded-lg w-full">
+            <h2 className="text-xl font-bold">Total Deposited ETH on Base: {totalDepositsFormatted ? totalDepositsFormatted + " " + "ETH" : "Loading..."}</h2>
+          </div>
+        </div>
+
+        <p className='text-lg italic text-gray-700 mt-4 md:mt-2'>*This information is based on several parameters and could change depending on miners activity.*</p>
+      </div>
       {/* ) : (
         <div className='text-center font-bold text-xl mt-80'>
           <p>Loading data...</p>
