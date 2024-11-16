@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Navbar: React.FC = () => {
   const handleRefresh = () => {
     window.location.reload();

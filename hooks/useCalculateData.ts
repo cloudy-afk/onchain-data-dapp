@@ -37,7 +37,7 @@ const useCalculateData = () => {
 
     fetchCalculateData();
   }, []);
-  return { calculateLoading, calculateError,calculateData };
+  return { calculateLoading, calculateError, calculateData };
 };
 
 export default useCalculateData;

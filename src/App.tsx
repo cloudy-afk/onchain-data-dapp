@@ -1,4 +1,3 @@
-import React from 'react';
 import TokenInfo from './components/TokenInfo';
 import './index.css';
 

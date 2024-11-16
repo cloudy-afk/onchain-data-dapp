@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { formatEther } from 'viem';
 import { base } from 'viem/chains';
 import { kv } from '@vercel/kv';
-import { depositedEventAbi } from '../src/abi/depositedEventAbi';
+import { depositedEventAbi } from '../src/abi/depositedEventAbi.ts';
 
 const tokenContractAddress = process.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}`;
 const miningContractAddress = process.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}`;
@@ -45,6 +45,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const cachedData = await kv.get('calculateData') as CachedCalculateData | null;
 
+    console.log('Cached data:', cachedData);
+
     const currentTime = Date.now();
     if (cachedData && (currentTime - cachedData.timestamp < CACHE_EXPIRY_TIME)) {
       return res.status(200).json(cachedData.data);
@@ -63,8 +65,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             event: depositedEventAbi,
             fromBlock: currentBlock,
             toBlock: endBlock,
-
+          }).catch(err => {
+            console.error('Error fetching logs:', err);
+            throw new Error('Failed to fetch logs');
           });
+
           logs = logs.concat(blockLogs);
         } catch (error) {
           console.error(`Error fetching logs from ${currentBlock} to ${endBlock}:`, error);
@@ -81,6 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const fromBlock = BigInt(21218165);
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
+        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         const uniqueAddresses = new Set(
           logs
@@ -105,6 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const fromBlock = BigInt(21218165);
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
+        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         let totalDeposits = 0n;
         for (const log of logs) {
@@ -133,6 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const fromBlock = BigInt(21218165); // Replace with actual start block if needed
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
+        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         let dailyVolume = 0n;
         for (const log of logs) {
@@ -160,6 +168,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       getDailyVolume(),
     ]);
 
+    console.log('Fetched Data:', { uniqueAddressesFetched, ethDepositTotal, dailyVolume });
+
+
     const uniqueAddresses = uniqueAddressesFetched.length;
     console.log('uniqueAddressesFetched:', uniqueAddresses);
 
@@ -183,6 +194,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json(data);
   } catch (error) {
     console.error("Error fetching calculated data:", error);
-    res.status(500).json({ error: 'Failed to fetch calculated data data' });
+    res.status(500).json({ error: 'Failed to fetch calculated data', message: error.message, stack: error.stack });
   }
 }
