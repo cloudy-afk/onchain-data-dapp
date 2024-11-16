@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.ts": {
+      "maxDuration": 60,
+      "memory": 256
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/token-data",
+      "destination": "/api/tokenData"
+    },
+    {
+      "source": "/mining-data",
+      "destination": "/api/miningData"
+    },
+    {
+      "source": "/calculate-data",
+      "destination": "/api/calculateData"
+    }
+  ]
+}
