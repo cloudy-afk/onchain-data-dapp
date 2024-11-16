@@ -31,7 +31,7 @@ interface CachedMiningData {
 const provider = new ethers.JsonRpcProvider(`https://base-mainnet.g.alchemy.com/v2/${key}`);
 
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
 
     if (!tokenContractAddress || !tokenContractAddress.startsWith('0x')) {

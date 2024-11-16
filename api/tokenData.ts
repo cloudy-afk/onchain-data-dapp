@@ -34,7 +34,7 @@ interface CachedTokenData {
   timestamp: number;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
 
     if (!tokenContractAddress || !tokenContractAddress.startsWith('0x')) {

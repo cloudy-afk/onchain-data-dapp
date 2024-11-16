@@ -18,7 +18,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-   
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "include": ["vite.config.ts"]
 }
