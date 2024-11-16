@@ -45,8 +45,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
     const cachedData = await kv.get('calculateData') as CachedCalculateData | null;
 
-    console.log('Cached data:', cachedData);
-
     const currentTime = Date.now();
     if (cachedData && (currentTime - cachedData.timestamp < CACHE_EXPIRY_TIME)) {
       return res.status(200).json(cachedData.data);
@@ -86,7 +84,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         const fromBlock = BigInt(21218165);
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
-        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         const uniqueAddresses = new Set(
           logs
@@ -111,7 +108,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         const fromBlock = BigInt(21218165);
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
-        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         let totalDeposits = 0n;
         for (const log of logs) {
@@ -140,7 +136,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         const fromBlock = BigInt(21218165); // Replace with actual start block if needed
         const toBlock = BigInt(await provider.getBlockNumber());
         const logs = await getLogsPaginated(fromBlock, toBlock);
-        console.log('From Block:', fromBlock, 'To Block:', toBlock);
 
         let dailyVolume = 0n;
         for (const log of logs) {
@@ -168,17 +163,11 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       getDailyVolume(),
     ]);
 
-    console.log('Fetched Data:', { uniqueAddressesFetched, ethDepositTotal, dailyVolume });
-
-
     const uniqueAddresses = uniqueAddressesFetched.length;
-    console.log('uniqueAddressesFetched:', uniqueAddresses);
 
     const totalEthDeposit = formatNumber(formatEther(ethDepositTotal));
-    console.log('totalEthDeposit:', totalEthDeposit);
 
     const totalDailyVolume = (formatNumber(formatEther(dailyVolume)));
-    console.log('totalDailyVolume:', totalDailyVolume);
 
     const data = {
       uniqueAddresses,

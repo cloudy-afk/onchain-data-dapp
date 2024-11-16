@@ -141,10 +141,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     const rewards = getRewardPerEth(totalEthDeposited);
 
     const term = getMiningTerm();
-    console.log('term:', term);
 
     const currentAllocation = getAllocation(term);
-    console.log('currentAllocation:', currentAllocation);
 
 
     const data = {

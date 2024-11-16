@@ -18,7 +18,6 @@ const useCalculateData = () => {
           throw new Error(`HTTP error! status: ${response.status}; Message:  ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("just checking:", result);
         setCalculateData({
           uniqueAddresses: result.uniqueAddresses,
           totalEthDeposit: result.totalEthDeposit,
