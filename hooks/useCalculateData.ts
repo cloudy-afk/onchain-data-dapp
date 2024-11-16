@@ -13,7 +13,7 @@ const useCalculateData = () => {
     const fetchCalculateData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/calculateData.ts');
+        const response = await fetch('/api/calculateData');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}; Message:  ${response.statusText}`);
         }
