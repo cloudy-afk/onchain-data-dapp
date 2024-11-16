@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { formatEther } from 'viem';
 import { base } from 'viem/chains';
 import { kv } from '@vercel/kv';
-import { depositedEventAbi } from '../src/abi/depositedEventAbi.ts';
+import { depositedEventAbi } from '../src/abi/depositedEventAbi';
 
 const tokenContractAddress = process.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}`;
 const miningContractAddress = process.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}`;
