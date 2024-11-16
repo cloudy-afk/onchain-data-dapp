@@ -24,9 +24,6 @@ const useCalculateData = () => {
           totalEthDeposit: result.totalEthDeposit,
           totalDailyVolume: result.totalDailyVolume,
         });
-        // setUniqueAddresses(result.uniqueAddresses);
-        // setTotalDepositsFormatted(result.totalEthDeposit);
-        // setTotalDailyVolume(result.totalDailyVolume);
       } catch (error) {
         console.error('Error fetching token data:', error);
         setError(error instanceof Error ? error.message : 'Unknown error occurred');

@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPublicClient, http } from 'viem';
 import { ethers } from "ethers";
-import { TokenAbi } from '../src/abi/itxToken';
-import { MiningAbi } from '../src/abi/mining';
+import { TokenAbi } from '../src/abi/itxToken.js';
+import { MiningAbi } from '../src/abi/mining.js';
 import { formatUnits, formatEther } from 'viem';
 import { base } from 'viem/chains';
 import { kv } from '@vercel/kv';
