@@ -3,12 +3,6 @@ import { useEffect, useState } from 'react';
 const useCalculateData = () => {
   const [calculateLoading, setLoading] = useState(true);
   const [calculateError, setError] = useState<string | null>(null);
-
-
-  // const [uniqueAddresses, setUniqueAddresses] = useState<number>(0);
-  // const [totalEthDeposit, setTotalDepositsFormatted] = useState<string>("");
-  // const [totalDailyVolume, setTotalDailyVolume] = useState<string>("");
-
   const [calculateData, setCalculateData] = useState({
     uniqueAddresses: 0,
     totalEthDeposit: "",
