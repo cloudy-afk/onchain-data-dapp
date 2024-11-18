@@ -7,7 +7,7 @@ import { differenceInDays, parse } from "date-fns";
 const tokenContractAddress = process.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}`;
 const miningContractAddress = process.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}`;
 const key = process.env.VITE_API_KEY;
-const CACHE_EXPIRY_TIME = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const CACHE_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes in milliseconds
 const MINING_START_DATE = "2024-08-07";
 const MINING_FIRST_TERM_DURATION = 16;
 const TERM_TOKEN_ALLOCATION = 143_000_000;

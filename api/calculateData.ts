@@ -9,7 +9,7 @@ import { depositedEventAbi } from '../src/abi/depositedEventAbi.js';
 const tokenContractAddress = process.env.VITE_TOKEN_CONTRACT_ADDRESS as `0x${string}`;
 const miningContractAddress = process.env.VITE_MINING_CONTRACT_ADDRESS as `0x${string}`;
 const key = process.env.VITE_API_KEY;
-const CACHE_EXPIRY_TIME = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const CACHE_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 interface CachedCalculateData {
   data: {
