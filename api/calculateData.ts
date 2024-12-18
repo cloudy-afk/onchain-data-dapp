@@ -50,7 +50,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       return res.status(200).json(cachedData.data);
     }
 
-    const getLogsPaginated = async (fromBlock: bigint, toBlock: bigint, step = 100000n) => {
+    const getLogsPaginated = async (fromBlock: bigint, toBlock: bigint, step = 50000n) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let logs: any[] = [];
       let currentBlock = fromBlock;
